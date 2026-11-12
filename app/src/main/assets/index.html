@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#080d1b"><title>Mayira AI</title>
+<style>
+:root{--bg:#080d1b;--panel:#111c31;--line:#2a3c5c;--accent:#64b5ff;--txt:#edf5ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0,#1c3158,var(--bg) 55%);color:var(--txt);font:15px system-ui,sans-serif;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;padding:17px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#080d1beF;z-index:2}
+.brand{font-size:22px;font-weight:900;letter-spacing:2px;color:var(--accent)}.sub,.hint{font-size:11px;color:#9eb3d3}
+main{max-width:760px;margin:auto;padding:14px}.orb{width:142px;height:142px;border-radius:50%;margin:24px auto 18px;background:radial-gradient(circle at 32% 27%,#e3f9ff,#69c6ff 18%,#5268dc 48%,#171b48 74%);box-shadow:0 0 45px #48a8ff88,inset -15px -18px 24px #080d24;animation:float 4s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-7px) scale(1.035);box-shadow:0 0 62px #48a8ffaa}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:14px;margin:13px 0}
+h2{font-size:17px;margin:4px 0 12px}button{border:0;border-radius:11px;background:#347edb;color:white;padding:11px 14px;font-weight:700;margin:3px}
+button.alt{background:#263752;color:#e4efff}input,textarea,select{width:100%;border:1px solid #344b6d;background:#091326;color:white;border-radius:10px;padding:12px;margin:6px 0}
+#chat{height:36vh;min-height:240px;overflow:auto;display:flex;flex-direction:column;gap:8px}.bubble{max-width:92%;padding:11px 13px;border-radius:14px;white-space:pre-wrap;line-height:1.45;overflow-wrap:anywhere}.user{align-self:flex-end;background:#244d82}.assistant{align-self:flex-start;background:#1d2c46}.error{border:1px solid #b85b67}
+.row{display:flex;gap:5px;align-items:center}.row input{flex:1}.hidden{display:none!important}.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+body.light{--bg:#eef4ff;--panel:#fff;--line:#ccd8eb;--txt:#13233b}body.light header{background:#eef4ffef}body.light input,body.light textarea,body.light select{background:#f7faff;color:#13233b}
+</style></head>
+<body><header><div><div class="brand" id="brand">MAYIRA</div><div class="sub">PERSONAL AI • DELTA 3</div></div><button class="alt" onclick="toggleSettings()">⚙ Settings</button></header>
+<main><div class="orb"></div><center><h2 id="hello">Hello! I am Mayira.</h2><div class="hint">Your personal AI assistant</div></center>
+<section class="panel"><div id="chat"></div><div class="row"><input id="prompt" placeholder="Mayira-কে কিছু জিজ্ঞেস করুন..." onkeydown="if(event.key==='Enter')send()"><button onclick="send()">Send</button></div><div class="row"><button class="alt" onclick="listen()">🎙 Voice</button><button class="alt" onclick="stopVoice()">■ Stop voice</button><button class="alt" onclick="clearChat()">Clear chat</button></div><div class="hint" id="status">Ready</div></section>
+<section class="panel"><h2>Quick tools</h2><div class="grid">
+<button class="alt" onclick="prefill('তুমি আমার coding expert। এই কোড বা error বিশ্লেষণ করে কারণ, সমাধান এবং কোথায় বসাব তা বুঝিয়ে দাও: ')">Coding Expert</button>
+<button class="alt" onclick="prefill('এই কথোপকথনের জন্য সুন্দর ও স্বাভাবিক reply draft করে দাও: ')">Chat Draft</button>
+<button class="alt" onclick="prefill('আমার জন্য কিছু বাস্তবসম্মত নতুন project idea এবং উন্নতির পরামর্শ দাও।')">Project Ideas</button>
+<button class="alt" onclick="speakLast()">🔊 Read last reply</button></div></section>
+<section class="panel hidden" id="settings"><h2>Settings</h2><label class="hint">Assistant name</label><input id="assistantName" maxlength="32" placeholder="Mayira"><label class="hint">Gemini API key</label><input id="apiKey" type="password" placeholder="Paste your Gemini API key"><div class="grid"><button onclick="saveSettings()">Save settings</button><button class="alt" onclick="toggleSettings()">Close</button></div>
+<label class="hint">Appearance</label><select id="theme" onchange="applyTheme()"><option value="dark">Dark</option><option value="light">Light</option></select>
+<label class="hint">Voice</label><select id="voiceMode"><option value="on">Voice enabled</option><option value="off">Voice muted</option></select>
+<label class="hint">Project suggestion frequency</label><select id="suggestions"><option value="low">Occasional</option><option value="medium">Sometimes</option><option value="off">Off</option></select>
+<hr style="border-color:var(--line)"><h2>Memory backup & restore</h2><div class="hint">Chat history ও assistant settings JSON backup-এ থাকবে। API key নিরাপত্তার জন্য export হবে না।</div>
+<button onclick="exportBackup()">Export JSON backup</button><button class="alt" onclick="restoreBackup()">Restore backup</button><div class="hint" id="backupStatus"></div>
+<hr style="border-color:var(--line)"><h2>Smart Update</h2><input id="repo" placeholder="GitHub username/repository"><button onclick="checkUpdate()">Check latest release</button><div class="hint" id="updateStatus"></div>
+<div class="hint">APK update Android-এর install confirmation ছাড়া স্বয়ংক্রিয়ভাবে install হবে না।</div></section>
+<div class="hint" style="text-align:center;padding:15px">Memory stays on this device. Export a backup before major updates.</div></main>
+<script>
+const KEY='mayira_delta3_memory';let history=[],pending={};let lastReply='';
+function native(){return window.Mayira||null}
+function migrate(d){if(!d||typeof d!=='object')throw Error('Backup format ভুল।');let v=Number(d.schemaVersion||1);if(v>1)throw Error('এই backup নতুন version-এর। App update করুন।');return{schemaVersion:1,history:(Array.isArray(d.history)?d.history:[]).filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.text==='string').slice(-1000),settings:d.settings||{}}}
+function persist(){let p=JSON.stringify({schemaVersion:1,history});localStorage.setItem(KEY,p);native()?.saveMemory(p)}
+function loadMemory(){try{let raw=native()?.loadMemory()||localStorage.getItem(KEY);if(raw){history=migrate(JSON.parse(raw)).history}}catch(e){console.log(e)}render()}
+function render(){let c=document.getElementById('chat');c.innerHTML='';history.forEach(m=>bubble(m.role,m.text));c.scrollTop=c.scrollHeight}
+function bubble(role,text,error=false){let e=document.createElement('div');e.className='bubble '+role+(error?' error':'');e.textContent=text;document.getElementById('chat').appendChild(e)}
+function setStatus(t){document.getElementById('status').textContent=t}
+function send(){let i=document.getElementById('prompt'),q=i.value.trim();if(!q)return;i.value='';history.push({role:'user',text:q,at:Date.now()});bubble('user',q);persist();let id=String(Date.now())+Math.random().toString(16).slice(2);pending[id]=true;setStatus('Mayira is thinking...');native()?.ask(q,id);if(!native()){onMayiraReply(id,'Android bridge পাওয়া যায়নি।',true)}}
+window.onMayiraReply=function(id,text,error){if(!pending[id])return;delete pending[id];history.push({role:'assistant',text,at:Date.now()});lastReply=text;bubble('assistant',text,error);persist();setStatus(error?'একটি সমস্যা হয়েছে':'Ready');document.getElementById('chat').scrollTop=999999};
+function prefill(t){document.getElementById('prompt').value=t;document.getElementById('prompt').focus()}
+function clearChat(){if(confirm('সব chat history মুছে ফেলবেন? আগে backup নিতে পারেন।')){history=[];persist();render()}}
+function toggleSettings(){document.getElementById('settings').classList.toggle('hidden');document.getElementById('assistantName').value=native()?.getAssistantName()||localStorage.getItem('mayira_name')||'Mayira';document.getElementById('apiKey').value=native()?.getApiKey()||'';document.getElementById('theme').value=localStorage.getItem('mayira_theme')||'dark';document.getElementById('voiceMode').value=localStorage.getItem('mayira_voice')||'on';document.getElementById('suggestions').value=localStorage.getItem('mayira_suggestions')||'low';document.getElementById('repo').value=localStorage.getItem('mayira_repo')||''}
+function saveSettings(){let n=document.getElementById('assistantName').value.trim()||'Mayira';native()?.setAssistantName(n);native()?.setApiKey(document.getElementById('apiKey').value);localStorage.setItem('mayira_name',n);localStorage.setItem('mayira_theme',document.getElementById('theme').value);localStorage.setItem('mayira_voice',document.getElementById('voiceMode').value);localStorage.setItem('mayira_suggestions',document.getElementById('suggestions').value);localStorage.setItem('mayira_repo',document.getElementById('repo').value.trim());document.getElementById('brand').textContent=n.toUpperCase();document.getElementById('hello').textContent='Hello! I am '+n+'.';applyTheme();setStatus('Settings saved')}
+function applyTheme(){document.body.classList.toggle('light',document.getElementById('theme').value==='light')}
+function exportBackup(){let data={app:'Mayira',schemaVersion:1,createdAt:new Date().toISOString(),history,settings:{name:native()?.getAssistantName()||localStorage.getItem('mayira_name')||'Mayira',theme:localStorage.getItem('mayira_theme')||'dark',voice:localStorage.getItem('mayira_voice')||'on',suggestions:localStorage.getItem('mayira_suggestions')||'low'}};native()?.exportBackup(JSON.stringify(data,null,2));document.getElementById('backupStatus').textContent='Backup export শুরু হয়েছে।'}
+function restoreBackup(){if(confirm('বর্তমান memory replace হবে। আগে backup নিয়েছেন?'))native()?.importBackup()}
+window.importMayiraBackup=function(raw){try{let d=JSON.parse(raw),m=migrate(d);if(!confirm('Backup restore করবেন? বর্তমান history replace হবে।'))return;history=m.history;persist();if(d.settings){localStorage.setItem('mayira_name',d.settings.name||'Mayira');localStorage.setItem('mayira_theme',d.settings.theme||'dark');localStorage.setItem('mayira_voice',d.settings.voice||'on');localStorage.setItem('mayira_suggestions',d.settings.suggestions||'low');native()?.setAssistantName(d.settings.name||'Mayira')}render();document.getElementById('backupStatus').textContent='Backup restored.'}catch(e){document.getElementById('backupStatus').textContent='Restore failed: '+e.message}};
+function listen(){if(localStorage.getItem('mayira_voice')==='off'){setStatus('Voice muted');return}native()?.listen();setStatus('Listening...')}
+window.onVoiceText=function(t){document.getElementById('prompt').value=t;send()};window.onVoiceError=function(){setStatus('Voice recognition failed')};
+function stopVoice(){native()?.stopSpeaking()}
+function speakLast(){if(localStorage.getItem('mayira_voice')==='off'){setStatus('Voice muted');return}if(lastReply)native()?.speak(lastReply)}
+function checkUpdate(){let repo=document.getElementById('repo').value.trim();if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){document.getElementById('updateStatus').textContent='GitHub username/repository লিখুন।';return}localStorage.setItem('mayira_repo',repo);document.getElementById('updateStatus').textContent='Checking...';native()?.checkUpdate(repo)}
+window.onUpdateResult=function(tag,url){document.getElementById('updateStatus').innerHTML='Latest release: '+tag+' ';let b=document.createElement('button');b.textContent='Open release';b.onclick=()=>native()?.openUrl(url);document.getElementById('updateStatus').appendChild(b)};
+window.onUpdateError=function(e){document.getElementById('updateStatus').textContent='Update check failed: '+e};
+loadMemory();let nm=native()?.getAssistantName()||localStorage.getItem('mayira_name')||'Mayira';document.getElementById('brand').textContent=nm.toUpperCase();document.getElementById('hello').textContent='Hello! I am '+nm+'.';document.body.classList.toggle('light',localStorage.getItem('mayira_theme')==='light');
+</script></body></html>
